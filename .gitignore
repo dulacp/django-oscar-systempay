@@ -1,0 +1,11 @@
+# Mac OSX
+.DS_Store
+
+htmlcov
+dist
+integration.py
+build/
+django_oscar_systempay.egg-info/
+TODO
+docs/_build
+*.py[oc]
