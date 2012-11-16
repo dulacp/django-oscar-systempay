@@ -7,7 +7,7 @@ from systempay.views import *
 class SystemPayApplication(Application):
     name = 'systempay' 
 
-    redirect_view = None
+    secure_redirect_view = views.SecureRedirectView
     preview_view = None
     cancel_response_view = None
     success_response_view = None
@@ -18,7 +18,7 @@ class SystemPayApplication(Application):
     def get_urls(self):
         urlpatterns = super(SystemPayApplication, self).get_urls()
         urlpatterns += patterns('',
-            url(r'^redirect/', self.redirect_view.as_view(), name='systempay-redirect'),
+            url(r'^secure-redirect/', self.secure_redirect_view.as_view(), name='systempay-redirect'),
             url(r'^preview/', self.success_response_view.as_view(preview=True),
                 name='systempay-success-response'),
             url(r'^cancel/', self.cancel_response_view.as_view(),

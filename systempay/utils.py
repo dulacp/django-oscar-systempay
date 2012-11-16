@@ -1,7 +1,7 @@
 from hashlib import sha1
 from django.conf import settings
 
-def compute_signature_hash(params):
+def compute_signature_hash(params, certifcate):
     """
     Compute the signature according to the doc
     """

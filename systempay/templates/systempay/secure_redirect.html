@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{{ STATIC_URL }}oscar/css/responsive.css" />
+{% endblock %}
+
+{% block layout %}
+<div class="navbar accounts">
+    <div class="navbar-inner">
+        <div class="container-fluid">
+            <a class="brand hidden" href="{% url promotions:home %}">{{ shop_name }}</a>
+        </div>
+    </div><!-- /navbar-inner -->
+</div><!-- /navbar -->
+
+<div class="container">
+    <div class="hero-unit">
+        <h1>Oups! Petit problème sur le serveur.</h1>
+        <p>Nous travaillons actuellement sur la résolution du problème. Veuillez nous excuser pour la gène occasionnée.</p>
+        <p>
+            <a class="btn btn-primary btn-large" onClick="javascript:history.go(-1);">Retour à la page précédente</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

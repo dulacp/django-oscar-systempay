@@ -1,4 +1,3 @@
-from xml.dom.minidom import Document, parseString
 import httplib
 import re
 import datetime
@@ -12,13 +11,9 @@ from systempay.forms import SystemPaySubmitForm, SystemPayReturnForm
 logger = logging.getLogger('systempay')
 
 
-# Status codes
-ACCEPTED, DECLINED, INVALID_CREDENTIALS = '1', '7', '10'
-
-
 class Gateway(object):
 
-    def __init__(self, host, context_mode, site_id, version='V1'):
+    def __init__(self, host, site_id, certificate, context_mode, version='V1'):
         if host.startswith('http'):
             raise RuntimeError("SYSTEMPAY_HOST should not include http")
         self._host = host
@@ -31,6 +26,7 @@ class Gateway(object):
             raise RuntimeError("Config `site_id` must contain exactly 8 digits, which is wrong : '%s'" % site_id)
         self._site_id = site_id
 
+        self._certificate = certificate
         self._version = version
 
     def _values_for_submit_signature(self, data):
@@ -61,15 +57,13 @@ class Gateway(object):
         :kwargs: additional data, check the fields of the `SystemPaySubmitForm` class to see all possible values.
         """
         data = {}
-
-        # additionnal data
-        data.update(kwargs)
+        data.update(kwargs) # additionnal data
 
         # required values
         # NB: we set the required values after so that we control format of those params
         data['amount'] = int(basket.total_incl_tax * 100)  # convert into an indivisible integer
         data['capture_delay'] = kwargs.get('capture_delay', '')
-        data['currency'] = kwargs.get('currency', 978)       # 978 stands for EURO (ISO 639-1)
+        data['currency'] = kwargs.get('currency', 978)     # 978 stands for EURO (ISO 639-1)
         data['ctx_mode'] = self._context_mode
         data['payment_cards'] = kwargs.get('payment_cards', '')
         data['payment_config'] = kwargs.get('payment_config', 'SINGLE')
@@ -86,12 +80,7 @@ class Gateway(object):
         Prepopulate the return form with the current request
         """
         data = {}
-
-        # additonal init data
-        data.update(kwargs)
-
-        # udpate with request data
-        data.update(request.POST)
-
+        data.update(kwargs) # additonal init data
+        data.update(request.POST) # udpate with request data
         return SystemPayReturnForm(data)
         
