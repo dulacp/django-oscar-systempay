@@ -1,0 +1,2 @@
+class SystemPayFormNotValid(Exception):
+    pass

@@ -78,16 +78,6 @@ class ResponseForm(forms.Form):
     def values_for_signature(self, data):
         return tuple(data[param] for param in self.SIGNATURE_PARAMS)
 
-    def compute_signature(self):
-        if self.is_valid():
-            return compute_signature_hash(self.values_for_signature(self.cleaned_data))
-        return ''
-
-    def is_signature_valid(self):
-        if self.is_valid():
-            signature = self.compute_signature()
-            return signature == self.cleaned_data['signature']
-
 
 class SystemPaySubmitForm(ResponseForm):
 
@@ -119,15 +109,6 @@ class SystemPaySubmitForm(ResponseForm):
     url_return = forms.CharField(max_length=127, required=False)
 
     contracts = forms.CharField(max_length=255, required=False)
-
-    def sign(self):
-        """
-        Return signing success or not
-        """
-        if self.is_valid():
-            self.cleaned_data['signature'] = self.compute_signature()
-            return True 
-        return False
 
 
 class SystemPayReturnForm(ResponseForm):

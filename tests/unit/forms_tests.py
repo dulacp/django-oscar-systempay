@@ -4,32 +4,28 @@ from mock import Mock
 from django.conf import settings
 from django.test import TestCase
 
-from oscar.apps.basket.models import Basket
-from systempay.gateway import Gateway
+from systempay.facade import Facade
 from systempay.forms import SystemPaySubmitForm, SystemPayReturnForm
 
 
 class TestForm(TestCase):
 
     def setUp(self):
-        self.basket = self.create_mock_basket()
-        self.gateway = Gateway(
-            'www.example.com', 
-            getattr(settings, 'SYSTEMPAY_CONTEXT_MODE'), 
-            getattr(settings, 'SYSTEMPAY_SITE_ID')
-        )
+        self.order = self.create_mock_order()
+        self.facade = Facade()
 
-    def create_mock_basket(self):
-        basket = Mock()
-        basket.total_incl_tax = D('15.24')
-        basket.lines = Mock()
-        basket.lines.all = Mock(return_value=[])
-        basket.total_discount = D('0.00')
-        basket.get_discounts = Mock(return_value=[])
-        return basket
+    def create_mock_order(self):
+        order = Mock()
+        order.id = '100313'
+        order.total_incl_tax = D('15.24')
+        order.lines = Mock()
+        order.lines.all = Mock(return_value=[])
+        order.total_discount = D('0.00')
+        order.get_discounts = Mock(return_value=[])
+        return order
 
-    def create_submit_form_with_basket(self, basket):
-        form = self.gateway.get_submit_form_populated_with_basket(self.basket)
+    def create_submit_form_with_order(self, order):
+        form = self.facade.get_submit_form_populated_with_order(self.order)
         form.data['trans_id'] = '654321'
         form.data['trans_date'] = '20090501193530'
         form.data['validation_mode'] = '1'
@@ -41,19 +37,15 @@ class TestForm(TestCase):
 
 class TestSubmitForm(TestForm):
 
-    def test_basket_can_be_submitted(self):
-        for line in self.basket.lines.all():
-            self.assertTrue( line.product.is_purchase_permitted(self.request.user, line.quantity) )
-
     def test_required_params_for_signature(self):
-        form = self.gateway.get_submit_form_populated_with_basket(self.basket)
+        form = self.facade.get_submit_form_populated_with_order(self.order)
         for param in SystemPaySubmitForm.SIGNATURE_PARAMS:
             self.assertIsNotNone( form.fields[param] )
 
     def test_is_signature_valid(self):
-        form = self.create_submit_form_with_basket(self.basket)
-        self.assertTrue( form.is_valid() )
-        self.assertTrue( form.sign() )
+        form = self.create_submit_form_with_order(self.order)
+        self.assertTrue( form.is_valid(), msg=u"Errors: %s" % form.errors )
+        self.assertTrue( self.facade.gateway.sign(form) )
         self.assertEqual( len(form.cleaned_data['signature']), 40 )
         self.assertEqual( form.cleaned_data['signature'], 'a6203523bc029df78f3654fe8569b1f7e293b411' )
 
@@ -66,7 +58,7 @@ class TestReturnForm(TestForm):
 
     def create_mock_request(self):
         request = Mock()
-        submit_form = self.create_submit_form_with_basket(self.basket)
+        submit_form = self.create_submit_form_with_order(self.order)
         submit_form.is_valid()
         request.POST = {
             'amount': submit_form.cleaned_data['amount'],
@@ -117,15 +109,15 @@ class TestReturnForm(TestForm):
         return request
 
     def test_required_params_for_signature(self):
-        form = self.gateway.get_return_form_populated_with_request(self.request)
+        form = self.facade.get_return_form_populated_with_request(self.request)
         for param in SystemPayReturnForm.SIGNATURE_PARAMS:
             self.assertIsNotNone( form.fields[param] )
 
     def test_is_signature_valid(self):
-        form = self.gateway.get_return_form_populated_with_request(self.request)
+        form = self.facade.get_return_form_populated_with_request(self.request)
         # form.is_valid()
         # print form.compute_signature()
         self.assertTrue( form.is_valid(), msg=u"Errors: %s" % form.errors )
         self.assertEqual( len(form.cleaned_data['signature']), 40 )
-        self.assertTrue( form.is_signature_valid() )
+        self.assertTrue( self.facade.gateway.is_signature_valid(form) )
 

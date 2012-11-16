@@ -7,8 +7,7 @@ from django.conf import settings
 
 if not settings.configured:
     extra_settings = {
-        'SYSTEMPAY_HOST': 'www.example.com',
-        'SYSTEMPAY_CONTEXT_MODE': 'TEST',
+        'SYSTEMPAY_SANDBOX_MODE': True,
     }
     # To specify integration settings (which include passwords, hence why they
     # are not committed), create an integration.py module.
