@@ -1,6 +1,9 @@
 # Mac OSX
 .DS_Store
 
+# Virtual Env
+venv
+
 htmlcov
 dist
 integration.py
