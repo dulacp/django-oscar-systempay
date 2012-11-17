@@ -18,6 +18,7 @@ class Facade(object):
         self.gateway = gateway.Gateway(settings.SYSTEMPAY_SANDBOX_MODE,
                                        settings.SYSTEMPAY_SITE_ID, 
                                        settings.SYSTEMPAY_CERTIFICATE,
+                                       getattr(settings, 'SYSTEMPAY_ACTION_MODE', 'INTERACTIVE'),
                                       )
         self.currency = getattr(settings, 'SYSTEMPAY_CURRENCY', 978) # 978 stands for EURO (ISO 639-1)
 
