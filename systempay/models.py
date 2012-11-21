@@ -15,22 +15,24 @@ class SystemPayTransaction(models.Model):
 
     # Unique identifier in the range 000000 to 899999. Integer between 900000 and 999999 are reserved
     # NB: it should only be unique over the current day
-    trans_id = models.CharField(max_length=6, blank=True)
+    trans_id = models.CharField(max_length=6, blank=True, null=True)
 
     # Need to respect the format ``YYYYMMDDHHMMSS`` in UTC timezone
-    trans_date = models.CharField(max_length=14, blank=True)
+    trans_date = models.CharField(max_length=14, blank=True, null=True)
 
-    auth_result = models.CharField(max_length=2, blank=True)
-    return_code = models.CharField(max_length=2, blank=True)
+    order_number = models.CharField(max_length=127, blank=True, null=True)
+    amount = models.DecimalField(max_digits=12, decimal_places=2, blank=True, null=True)
+    currency = models.CharField(max_length=8, blank=True, null=True)
 
-    error_code = models.CharField(max_length=32, null=True, blank=True)
-    error_message = models.CharField(max_length=256, null=True, blank=True)
+    auth_result = models.CharField(max_length=2, blank=True, null=True)
+    return_code = models.CharField(max_length=2, blank=True, null=True)
+
+    error_message = models.CharField(max_length=256, blank=True, null=True)
 
     #
     # Debug information
     #
     raw_request = models.TextField(max_length=512)
-    response_time = models.FloatField(help_text="Response time in milliseconds")
     date_created = models.DateTimeField(auto_now_add=True)
 
 

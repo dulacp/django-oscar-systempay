@@ -1,6 +1,8 @@
 # encoding: utf-8
 
 from decimal import Decimal as D
+from urllib import urlencode
+import logging
 
 from django.db.models import get_model
 from django.views import generic
@@ -10,10 +12,17 @@ from django.core.urlresolvers import reverse
 from oscar.apps.checkout.views import PaymentDetailsView, CheckoutSessionMixin
 
 from systempay.facade import Facade
+from systempay.exceptions import *
+
+logger = logging.getLogger('systempay')
 
 Order = get_model('order', 'Order')
 Source = get_model('payment', 'Source')
 SourceType = get_model('payment', 'SourceType')
+
+
+def printable_form_errors(form):
+        return u' / '.join([u"%s: %s" % (f.name, '. '.join(f.errors)) for f in form])
 
 
 class SecureRedirectView(generic.DetailView):
@@ -116,32 +125,41 @@ class PlaceOrderView(PaymentDetailsView):
 class HandleIPN(PaymentDetailsView):
 
     def post(self, request, *args, **kwargs):
-        pass
+        self.handle_ipn(request)
 
-    def confirm_transaction(self, txn):
-        pass
-
-    def handle_ipn(self, order_number, total_incl_tax, **kwargs):
+    def handle_ipn(self, request, **kwargs):
         """
         Complete payment with PayPal - this calls the 'DoExpressCheckout'
         method to capture the money from the initial transaction.
         """
-        try:
-            order = Order.objects.get(number=order_number)
-        except Order.DoesNotExist, inst:
-            raise PaymentError("Unable to retrieve Order #%s" % order_number)
+        try: 
+            txn = Facade().handle_request(request)
+        except SystemPayFormNotValid, inst:
+            logger.error(inst.message)
+            raise UnableToTakePayment(inst.message)
+        except SystemPayGatewayParamError, inst:
+            logger.error(inst.message)
+            raise UnableToTakePayment(inst.message)
+        except SystemPayGatewayAuthorizationError, inst:
+            logger.error(inst.message)
+            raise PaymentError(inst.message)
+        except SystemPayGatewayPaymentRejected, inst:
+            logger.error(inst.message)
+            raise PaymentError(inst.message)
+        except SystemPayGatewayServerError, inst:
+            logger.error(inst.message)
+            raise UnableToTakePayment(inst.message)
 
         try:
-            txn = self.confirm_transaction(token, amount=self.txn.amount,
-                                      currency=self.txn.currency)
-        except PayPalError:
-            raise UnableToTakePayment()
+            order = Order.objects.get(number=txn.order_number)
+        except Order.DoesNotExist, inst:
+            raise PaymentError("Unable to retrieve Order #%s" % txn.order_number)
 
         # Record payment source
         source_type, is_created = SourceType.objects.get_or_create(code='systempay')
         source = Source(source_type=source_type,
                         currency=txn.currency,
-                        amount_allocated=0,
-                        amount_debited=total_incl_tax,
+                        amount_allocated=D(0),
+                        amount_debited=txn.amount,
                         order=order)
         source.save()

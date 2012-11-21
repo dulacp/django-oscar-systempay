@@ -78,3 +78,13 @@ class SystemPayGatewayParamError(Exception):
                     code, self.ASSOCS.get(code, '<unknown>')
                 )
             )
+
+
+class SystemPayGatewayAuthorizationError(Exception):
+    pass    
+
+class SystemPayGatewayPaymentRejected(Exception):
+    pass
+
+class SystemPayGatewayServerError(Exception):
+    pass
