@@ -7,10 +7,9 @@ from systempay import views
 class SystemPayApplication(Application):
     name = 'systempay' 
 
-    secure_redirect_view = views.SecureRedirectView
-    preview_view = views.PreviewView
+    place_order_view = views.PlaceOrderView
     cancel_response_view = views.CancelResponseView
-    success_response_view = views.SuccessResponseView
+    secure_redirect_view = views.SecureRedirectView
 
     def __init__(self, *args, **kwargs):
         super(SystemPayApplication, self).__init__(*args, **kwargs)
@@ -18,13 +17,13 @@ class SystemPayApplication(Application):
     def get_urls(self):
         urlpatterns = super(SystemPayApplication, self).get_urls()
         urlpatterns += patterns('',
-            url(r'^secure-redirect/', self.secure_redirect_view.as_view(), name='systempay-redirect'),
-            url(r'^preview/', self.preview_view.as_view(preview=True),
-                name='systempay-success-response'),
+            url(r'^secure-redirect/', self.secure_redirect_view.as_view(), name='secure-redirect'),
+            url(r'^preview/', self.place_order_view.as_view(preview=True),
+                name='preview'),
             url(r'^cancel/', self.cancel_response_view.as_view(),
-                name='systempay-cancel-response'),
-            url(r'^place-order/', self.success_response_view.as_view(),
-                name='systempay-place-order'),
+                name='cancel-response'),
+            url(r'^place-order/', self.place_order_view.as_view(),
+                name='place-order'),
             # View for using PayPal as a payment method
             # url(r'^handle-ipn/', self.redirect_view.as_view(as_payment_method=True),
             #     name='systempay-direct-payment'),

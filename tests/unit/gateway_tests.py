@@ -29,6 +29,7 @@ class TestForm(TestCase):
         form.data['vads_trans_id'] = '654321'
         form.data['vads_trans_date'] = '20090501193530'
         form.data['vads_payment_config'] = 'SINGLE'
+        self.facade.gateway.sign(form) # we resign the form because the data has been changed
         return form
 
     def printable_form_errors(self, form):
@@ -44,10 +45,9 @@ class TestSubmitForm(TestForm):
 
     def test_is_signature_valid(self):
         form = self.create_submit_form_with_order(self.order)
-        self.facade.gateway.sign(form)
         self.assertTrue( form.is_valid(), msg=u"Errors: %s" % self.printable_form_errors(form) )
         self.assertEqual( len(form.cleaned_data['signature']), 40 )
-        self.assertEqual( form.cleaned_data['signature'], '606b369759fac4f0864144c803c73676cbe470ff' )
+        self.assertEqual( form.cleaned_data['signature'], 'a2750861b9e38dcb4ed22e4e10c6f423d3435dc8' )
 
 
 class TestReturnForm(TestForm):
@@ -69,7 +69,7 @@ class TestReturnForm(TestForm):
             'vads_card_number': '987654321',
             'vads_extra_result': '',
 
-            'signature': 'f3b1b367f02b1fefb9255d3bc1cd9010608d3754',
+            'signature': 'dd6b820d90b823b7d73998694fa3c230ef224bfd',
 
             'warranty_result': '',
             'payment_certificate': "0123456789101112131415161718192021222324",

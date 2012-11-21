@@ -21,6 +21,8 @@ class Gateway(object):
     https://systempay.cyberpluspaiement.com/html/Doc/2.2_Guide_d_implementation_formulaire_Paiement_V2.pdf
     """
 
+    URL = "https://paiement.systempay.fr/vads-payment/"
+
     def __init__(self, sandbox_mode, site_id, certificate, action_mode, version='V2', notify_user_by_email=False,
             post_on_customer_return=False, custom_contracts=None):
 
@@ -40,7 +42,6 @@ class Gateway(object):
 
         self._certificate = certificate
         self._version = version
-        self._url = "https://paiement.systempay.fr/vads-payment/"
 
         # optional params (impact the required params)
         self._notify_user_by_email = notify_user_by_email
@@ -55,7 +56,6 @@ class Gateway(object):
         params = form.values_for_signature(form.data)
         sign = '+'.join(params) + '+' + self._certificate
         return sha1(sign).hexdigest()
-        #raise SystemPayFormNotValid, u"signature can't be computed because the form is not valid '%s'" % form.errors
 
     def is_signature_valid(self, form):
         if form.is_valid():

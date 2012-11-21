@@ -29,11 +29,13 @@ class Facade(object):
         :order: an oscar order instance
         :kwargs: additional data, check the fields of the `SystemPaySubmitForm` class to see all possible values.
         """
-        return self.gateway.get_submit_form(
+        form = self.gateway.get_submit_form(
                 order.total_incl_tax, 
                 order_id=order.id, 
                 **kwargs
             )
+        self.gateway.sign(form)
+        return form
 
     def get_return_form_populated_with_request(self, request, **kwargs):
         """

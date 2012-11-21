@@ -50,7 +50,7 @@
         <p>Vous allez être redirigé vers la plateforme de paiement Banque Populaire.</p>
         <img class="loader" src="{{ STATIC_URL }}systempay/img/loader.gif" />
 
-        <form method="post" action="{{ SYSTEMPAY_HOST }}">
+        <form id="submit-form" method="post" action="{{ SYSTEMPAY_GATEWAY_URL }}">
             {% for field in submit_form %}
                 {{ field.as_hidden }}
             {% endfor %}
@@ -62,3 +62,10 @@
     </div>
 </div>
 {% endblock %}
+
+{% block onbodyload %}
+    {{ block.super }}
+    setTimeout(function() {
+        $('#submit-form').submit();
+    }, {{ SYSTEMPAY_REDIRECT_TIMEOUT|default:5000 }});
+{% endblock onbodyload %}
