@@ -71,15 +71,11 @@ class ResponseForm(forms.Form):
 
     vads_validation_mode = forms.CharField(max_length=1, required=False)
 
-    @property
-    def signature_params(self):
-        return tuple(k for k in self.fields.keys() if k.startswith('vads_'))
-
-    def sorted_and_filtered_signature_params(self, data):
-        return sorted(p for p in self.signature_params)
+    def sorted_signature_params(self, data):
+        return sorted(p for p in data.keys() if p.startswith('vads_'))
 
     def values_for_signature(self, data):
-        return tuple( map( str, (data.get(param, '') for param in self.sorted_and_filtered_signature_params(data)) ) )
+        return tuple( map( str, (data.get(param, '') for param in self.sorted_signature_params(data)) ) )
 
 
 class SystemPaySubmitForm(ResponseForm):
