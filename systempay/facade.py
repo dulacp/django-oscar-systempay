@@ -62,7 +62,7 @@ class Facade(object):
         """
         Prepopulate the return form with the current request
         """
-        return self.gateway.get_return_form(**request.POST)
+        return self.gateway.get_return_form( **dict( (k, request.POST.get(k)) for k in request.POST ) )
 
     def handle_request(self, request):
         """
@@ -74,26 +74,26 @@ class Facade(object):
         In both cases the data will be POST data, the only difference is that in the case 2. the 
         POST data will contain a ``hash`` parameter that needs to be include in the signature computation
         """
-        form = facade.get_return_form_populated_with_request(request)
+        form = self.get_return_form_populated_with_request(request)
 
         # create the database record
         order_number = self.get_order_number(form)
         total_incl_tax = self.get_total_incl_tax(form)
-        txn = self.record_return_txn(method, order_number, total_incl_tax, request)
+        txn = self.record_return_txn(order_number, total_incl_tax, request)
 
         if not form.is_valid():
             txn.error_message = printable_form_errors(form)
             txn.save()
-            raise SystemPayFormNotValid("The data received are not complete: %s. See the record #%s for more details" % (
+            raise SystemPayFormNotValid("The data received are not complete: %s. See the transaction record #%s for more details" % (
                     printable_form_errors(form), txn.id)
                 )
 
-        if not facade.gateway.is_signature_valid(form):
+        if not self.gateway.is_signature_valid(form):
             txn.error_message = u"Signature not valid. Get '%s' vs Expected '%s'" % (
-                    form.cleaned_data['signature'], facade.gateway.compute_signature(form) 
+                    form.cleaned_data['signature'], self.gateway.compute_signature(form) 
                 )
             txn.save()
-            raise SystemPayFormNotValid("The data received are not valid. See the record #%s for more details" % txn.id)
+            raise SystemPayFormNotValid("The data received are not valid. See the transaction record #%s for more details" % txn.id)
 
         if not txn.is_complete():
 
@@ -102,7 +102,7 @@ class Facade(object):
             elif txn.result == '05':
                 raise SystemPayGatewayPaymentRejected("The payment has been rejected")
             elif txn.result == '30':
-                extra_result = facade.get_extra_result(form)
+                extra_result = self.get_extra_result(form)
                 raise SystemPayGatewayParamError(code=extra_result)
             elif txn.result == '96':
                 raise SystemPayGatewayServerError("Technical error while processing the payment")
@@ -110,7 +110,7 @@ class Facade(object):
                 raise SystemPayGatewayServerError("Unknown error")
 
             # TODO handle the ``auth_result`` param
-            # auth_result = facade.get_auth_result(form)
+            # auth_result = self.get_auth_result(form)
             # if auth_result == '':
             #     raise SystemPayGatewayError
 

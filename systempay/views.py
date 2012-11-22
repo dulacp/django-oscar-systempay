@@ -12,7 +12,7 @@ from django.utils.translation import ugettext_lazy as _
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 
-from oscar.apps.checkout.views import PaymentDetailsView, CheckoutSessionMixin
+from oscar.core.loading import get_classes
 
 from systempay.facade import Facade
 from systempay.exceptions import *
@@ -24,6 +24,9 @@ Source = get_model('payment', 'Source')
 SourceType = get_model('payment', 'SourceType')
 
 SystemPayTransaction = get_model('systempay', 'SystemPayTransaction')
+
+PaymentDetailsView, CheckoutSessionMixin = get_classes('checkout.views', ['PaymentDetailsView', 'CheckoutSessionMixin'])
+PaymentError, UnableToTakePayment = get_classes('payment.exceptions', ['PaymentError', 'UnableToTakePayment'])
 
 
 def printable_form_errors(form):
@@ -161,18 +164,20 @@ class ReturnResponseView(generic.RedirectView):
                 raise Http404(_("The page requested seems outdated"))
 
         # check if the transaction exists
-        try:
-            txn = SystemPayTransaction.objects.get(mode=SystemPayTransaction.MODE_RETURN, order_number=order.number)
+        txns = SystemPayTransaction.objects.filter(
+                mode=SystemPayTransaction.MODE_RETURN, 
+                order_number=order.number
+            ).order_by('-date_created')[0]
 
-            # check if the transaction has been complete
-            if txn.is_complete():
+        if not txns:
+            messages.error(self.request, _("No response received from your bank for the moment. "
+                                       "Be patient, we'll get back to you as soon as we receive it.") )
+        else:
+            txn = txns[0]
+            if txn.is_complete(): # check if the transaction has been complete
                 messages.success(self.request, _("Your payment has been successfully validated."))
             else:
                 messages.error(self.request, _("Your payment has been rejected for the reason. You will not be charged. Contact the support for more details."))
-
-        except SystemPayTransaction.DoesNotExist:
-            messages.error(self.request, _("No response received from your bank for the moment. "
-                                           "Be patient, we'll get back to you as soon as we receive it.") )
 
         self.request.session['checkout_order_id'] = order.id
         return reverse('checkout:thank-you')
@@ -187,11 +192,18 @@ class CancelResponseView(generic.RedirectView):
 class HandleIPN(generic.View):
 
     def get(self, request, *args, **kwargs):
+        if request.user and request.user.is_superuser:
+            # Authorize admins for test purpose to copy the GET params to the POST dict
+            request.POST = request.GET
+            return self.post(request, *args, **kwargs)
         return HttpResponse()
 
     @method_decorator(csrf_exempt)
     def post(self, request, *args, **kwargs):
-        self.handle_ipn(request)
+        try:
+            self.handle_ipn(request)
+        except PaymentError, inst:
+            return HttpResponseBadRequest(inst.message)
         return HttpResponse()
 
     def handle_ipn(self, request, **kwargs):
@@ -199,34 +211,23 @@ class HandleIPN(generic.View):
         Complete payment with PayPal - this calls the 'DoExpressCheckout'
         method to capture the money from the initial transaction.
         """
+        txn = None
         try: 
             txn = Facade().handle_request(request)
-        except SystemPayFormNotValid, inst:
-            logger.error(inst.message)
-            raise UnableToTakePayment(inst.message)
-        except SystemPayGatewayParamError, inst:
-            logger.error(inst.message)
-            raise UnableToTakePayment(inst.message)
-        except SystemPayGatewayAuthorizationError, inst:
-            logger.error(inst.message)
-            raise PaymentError(inst.message)
-        except SystemPayGatewayPaymentRejected, inst:
-            logger.error(inst.message)
-            raise PaymentError(inst.message)
-        except SystemPayGatewayServerError, inst:
-            logger.error(inst.message)
-            raise UnableToTakePayment(inst.message)
 
-        try:
             order = Order.objects.get(number=txn.order_number)
-        except Order.DoesNotExist, inst:
-            raise PaymentError(_("Unable to retrieve Order #%s") % txn.order_number)
+            # Record payment source
+            source_type, is_created = SourceType.objects.get_or_create(code='systempay')
+            source = Source(source_type=source_type,
+                            currency=txn.currency,
+                            amount_allocated=D(0),
+                            amount_debited=txn.amount,
+                            order=order)
+            source.save()
 
-        # Record payment source
-        source_type, is_created = SourceType.objects.get_or_create(code='systempay')
-        source = Source(source_type=source_type,
-                        currency=txn.currency,
-                        amount_allocated=D(0),
-                        amount_debited=txn.amount,
-                        order=order)
-        source.save()
+        except SystemPayError, inst:
+            logger.error(inst.message)
+            raise PaymentError(inst.message)
+        except Order.DoesNotExist, inst:
+            logger.error(_("Unable to retrieve Order #%s") % txn.order_number)
+            raise PaymentError(_("Unable to retrieve Order #%s") % txn.order_number)

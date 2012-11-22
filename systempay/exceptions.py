@@ -1,7 +1,10 @@
-class SystemPayFormNotValid(Exception):
+class SystemPayError(Exception):
     pass
 
-class SystemPayGatewayParamError(Exception):
+class SystemPayFormNotValid(SystemPayError):
+    pass
+
+class SystemPayGatewayParamError(SystemPayError):
 
     ASSOCS = {
         '47': 'vads_action_mode',
@@ -80,11 +83,11 @@ class SystemPayGatewayParamError(Exception):
             )
 
 
-class SystemPayGatewayAuthorizationError(Exception):
+class SystemPayGatewayAuthorizationError(SystemPayError):
     pass    
 
-class SystemPayGatewayPaymentRejected(Exception):
+class SystemPayGatewayPaymentRejected(SystemPayError):
     pass
 
-class SystemPayGatewayServerError(Exception):
+class SystemPayGatewayServerError(SystemPayError):
     pass

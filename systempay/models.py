@@ -27,7 +27,7 @@ class SystemPayTransaction(models.Model):
     auth_result = models.CharField(max_length=2, blank=True, null=True)
     result = models.CharField(max_length=2, blank=True, null=True)
 
-    error_message = models.CharField(max_length=256, blank=True, null=True)
+    error_message = models.TextField(max_length=512, blank=True, null=True)
 
     #
     # Debug information
@@ -62,11 +62,26 @@ class SystemPayTransaction(models.Model):
 
     @property
     def context(self):
-        return urlparse.parse_qs(self.raw_request)
+        return urlparse.parse_qs(self.raw_request, keep_blank_values=True)
 
     def value(self, key):
         ctx = self.context
         return ctx[key][0].decode('utf8') if key in ctx else None
 
     def is_complete(self):
-        return self.result == '00'
+        return not self.error_message and self.result == '00'
+
+    @property
+    def computed_signature(self):
+        """
+        Compute the signature on the fly
+        """
+        from mock import Mock
+        from systempay.facade import Facade
+        from django.http import QueryDict
+        request = Mock()
+        request.POST = QueryDict(self.raw_request)
+        facade = Facade()
+        form = facade.get_return_form_populated_with_request(request)
+        return facade.gateway.compute_signature(form)
+
