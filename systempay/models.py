@@ -37,7 +37,7 @@ class SystemPayTransaction(models.Model):
 
 
     class Meta:
-        unique_together = ('trans_id', 'trans_date')
+        #unique_together = ('trans_id', 'trans_date')
         ordering = ('-date_created',)
 
     def __unicode__(self):
