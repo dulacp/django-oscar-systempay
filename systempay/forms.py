@@ -14,7 +14,7 @@ class ResponseForm(forms.Form):
         )
     vads_action_mode = forms.ChoiceField(choices=ACTION_MODE_CHOICES)
     vads_amount = forms.CharField(max_length=12) # NB: expressed in cents for euros (unity undivisible)
-    vads_currency = forms.CharField(max_length=3) # 978 stands for EURO (ISO 639-1)
+    vads_currency = forms.CharField(max_length=3) # 978 stands for EURO (ISO 4217)
 
     CONTEXT_TEST, CONTEXT_PRODUCTION = ('TEST', 'PRODUCTION')
     CONTEXT_CHOICES = (

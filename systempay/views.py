@@ -209,18 +209,29 @@ class HandleIPN(generic.View):
         method to capture the money from the initial transaction.
         """
         txn = None
-        try: 
+        try:
             txn = Facade().handle_request(request)
-
             order = Order.objects.get(number=txn.order_number)
+
             # Record payment source
             source_type, is_created = SourceType.objects.get_or_create(code='systempay')
-            source = Source(source_type=source_type,
-                            currency=txn.currency,
-                            amount_allocated=D(0),
-                            amount_debited=txn.amount,
-                            order=order)
-            source.save()
+
+            if txn.operation_type == SystemPayTransaction.OPERATION_TYPE_DEBIT:
+                source = Source(source_type=source_type,
+                                currency=txn.currency,
+                                amount_allocated=D(0),
+                                amount_debited=txn.amount,
+                                order=order)
+                source.save()
+            elif txn.operation_type == SystemPayTransaction.OPERATION_TYPE_CREDIT:
+                source = Source(source_type=source_type,
+                                currency=txn.currency,
+                                amount_allocated=D(0),
+                                amount_refunded=txn.amount,
+                                order=order)
+                source.save()
+            else:
+                raise PaymentError(_("Unknown operation type '%s'") % txn.operation_type)
 
         except SystemPayError, inst:
             logger.error(inst.message)

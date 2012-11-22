@@ -131,6 +131,7 @@ class Facade(object):
         """
         return SystemPayTransaction.objects.create(
                 mode=mode,
+                operation_type=data.get('vads_operation_type'),
                 trans_id=data.get('vads_trans_id'),
                 trans_date=data.get('vads_trans_date'),
                 order_number=order_number,
