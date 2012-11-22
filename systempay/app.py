@@ -1,4 +1,6 @@
 from django.conf.urls import patterns, url
+from django.views.decorators.csrf import csrf_exempt
+
 from oscar.core.application import Application
 
 from systempay import views
@@ -28,7 +30,8 @@ class SystemPayApplication(Application):
                 name='return-response'),
             url(r'^cancel$', self.cancel_response_view.as_view(),
                 name='cancel-response'),
-            url(r'^handle-ipn$', self.handle_ipn_view.as_view(),
+
+            url(r'^handle-ipn$', csrf_exempt(self.handle_ipn_view.as_view()),
                 name='handle-ipn'),
         )
         return self.post_process_urls(urlpatterns)

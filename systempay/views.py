@@ -9,8 +9,6 @@ from django.contrib import messages
 from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseBadRequest
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
-from django.utils.decorators import method_decorator
-from django.views.decorators.csrf import csrf_exempt
 
 from oscar.core.loading import get_classes
 
@@ -198,7 +196,6 @@ class HandleIPN(generic.View):
             return self.post(request, *args, **kwargs)
         return HttpResponse()
 
-    @method_decorator(csrf_exempt)
     def post(self, request, *args, **kwargs):
         try:
             self.handle_ipn(request)
