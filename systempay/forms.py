@@ -1,7 +1,5 @@
 from django import forms
 
-from systempay.utils import compute_signature_hash
-
 
 class ResponseForm(forms.Form):
 
