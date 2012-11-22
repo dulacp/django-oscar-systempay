@@ -9,6 +9,8 @@ from django.contrib import messages
 from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseBadRequest
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
 
 from oscar.apps.checkout.views import PaymentDetailsView, CheckoutSessionMixin
 
@@ -187,6 +189,7 @@ class HandleIPN(generic.View):
     def get(self, request, *args, **kwargs):
         return HttpResponse()
 
+    @method_decorator(csrf_exempt)
     def post(self, request, *args, **kwargs):
         self.handle_ipn(request)
         return HttpResponse()
