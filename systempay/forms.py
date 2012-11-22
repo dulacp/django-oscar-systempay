@@ -71,8 +71,11 @@ class ResponseForm(forms.Form):
 
     vads_validation_mode = forms.CharField(max_length=1, required=False)
 
+    def signature_params(self, data):
+        raise NotImplementedError
+
     def sorted_signature_params(self, data):
-        return sorted(p for p in data.keys() if p.startswith('vads_'))
+        return sorted(p for p in self.signature_params(data) if p.startswith('vads_'))
 
     def values_for_signature(self, data):
         return tuple( map( str, (data.get(param, '') for param in self.sorted_signature_params(data)) ) )
@@ -117,6 +120,9 @@ class SystemPaySubmitForm(ResponseForm):
     vads_ship_to_street = forms.CharField(max_length=255, required=False)
     vads_ship_to_street2 = forms.CharField(max_length=255, required=False)
     vads_ship_to_zip = forms.CharField(max_length=63, required=False)
+
+    def signature_params(self, data):
+        return self.fields.keys()
 
 
 class SystemPayReturnForm(ResponseForm):
@@ -197,6 +203,9 @@ class SystemPayReturnForm(ResponseForm):
     vads_threeds_sign_valid = forms.CharField(max_length=1, required=False)
     vads_threeds_error_code = forms.CharField(max_length=127, required=False)
     vads_threeds_exit_status = forms.CharField(max_length=127, required=False)
+
+    def signature_params(self, data):
+        return data.keys()
 
 
 class SystemPayIPNForm(SystemPayReturnForm):

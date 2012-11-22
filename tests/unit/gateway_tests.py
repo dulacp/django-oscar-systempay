@@ -3,6 +3,7 @@ from mock import Mock
 
 from django.conf import settings
 from django.test import TestCase
+from django.http import QueryDict
 
 from systempay.facade import Facade
 from systempay.forms import SystemPaySubmitForm, SystemPayReturnForm
@@ -16,7 +17,7 @@ class TestForm(TestCase):
 
     def create_mock_order(self):
         order = Mock()
-        order.id = '100313'
+        order.number = '100313'
         order.total_incl_tax = D('15.24')
         order.lines = Mock()
         order.lines.all = Mock(return_value=[])
@@ -29,7 +30,13 @@ class TestForm(TestCase):
         form.data['vads_trans_id'] = '654321'
         form.data['vads_trans_date'] = '20090501193530'
         form.data['vads_payment_config'] = 'SINGLE'
-        self.facade.gateway.sign(form) # we resign the form because the data has been changed
+
+        # override to have the same hash
+        self.facade.gateway._site_id = "12345678"
+        self.facade.gateway._certificate = "1122334455667788"
+
+        # we sign AGAIN the form because the data has been changed
+        self.facade.gateway.sign(form)
         return form
 
     def printable_form_errors(self, form):
@@ -38,16 +45,11 @@ class TestForm(TestCase):
 
 class TestSubmitForm(TestForm):
 
-    def test_required_params_for_signature(self):
-        form = self.facade.get_submit_form_populated_with_order(self.order)
-        for param in form.signature_params:
-            self.assertIsNotNone( form.fields[param] )
-
     def test_is_signature_valid(self):
         form = self.create_submit_form_with_order(self.order)
         self.assertTrue( form.is_valid(), msg=u"Errors: %s" % self.printable_form_errors(form) )
         self.assertEqual( len(form.cleaned_data['signature']), 40 )
-        self.assertEqual( form.cleaned_data['signature'], 'a2750861b9e38dcb4ed22e4e10c6f423d3435dc8' )
+        self.assertEqual( form.cleaned_data['signature'], '5e1c92ed97089f3192c8c729236ec87567048590' )
 
 
 class TestReturnForm(TestForm):
@@ -58,36 +60,30 @@ class TestReturnForm(TestForm):
 
     def create_mock_request(self):
         request = Mock()
-        request.POST = {}
-        submit_form = self.create_submit_form_with_order(self.order)
-        request.POST.update(submit_form.data)
-        request.POST.update({
-            'vads_auth_result': '',
-            'vads_auth_mode': 'FULL',
-            'vads_auth_number': '123456',
-            'vads_card_brand': '0123456789',
-            'vads_card_number': '987654321',
-            'vads_extra_result': '',
-
-            'signature': 'dd6b820d90b823b7d73998694fa3c230ef224bfd',
-
-            'warranty_result': '',
-            'payment_certificate': "0123456789101112131415161718192021222324",
-            'result': "02",
-
-            'contract_used': "CONTRAT" #TODO
-        })
+        request.POST = QueryDict("vads_validation_mode=0&vads_cust_cell_phone=&vads_threeds_error_code=&\
+vads_auth_number=171970&vads_site_id=99878789&vads_cust_id=&vads_ctx_mode=TEST&vads_language=fr&\
+vads_payment_config=SINGLE&vads_ship_to_name=&vads_threeds_cavv=Q2F2dkNhdnZDYXZ2Q2F2dkNhdnY%3D&vads_extra_result=&\
+vads_version=V2&vads_cust_country=&vads_cust_city=&vads_auth_mode=FULL&vads_trans_id=550758&vads_contrib=&\
+vads_threeds_xid=dkNBQURpbHluUHMzbHdqSnRsSnc%3D&vads_card_country=FR&vads_cust_phone=&vads_order_info=&\
+vads_cust_address=&vads_ship_to_phone_num=&vads_currency=978&vads_page_action=PAYMENT&vads_cust_name=&\
+vads_sequence_number=1&vads_order_info2=&vads_order_info3=&\
+vads_payment_certificate=f59522596f05f1b18e878f586ea31b4809832969&vads_threeds_enrolled=Y&\
+vads_trans_date=20121122151746&vads_url_check_src=PAY&vads_warranty_result=YES&vads_auth_result=00&\
+vads_payment_src=EC&vads_threeds_exit_status=10&vads_cust_zip=&vads_card_brand=CB&vads_pays_ip=FR&\
+vads_capture_delay=0&vads_ship_to_street=&vads_ship_to_state=&vads_cust_email=&vads_contract_used=5830136&\
+vads_action_mode=INTERACTIVE&vads_ship_to_street2=&vads_user_info=&vads_threeds_status=Y&vads_amount=1904&\
+vads_order_id=100368&vads_ship_to_zip=&vads_ship_to_country=&vads_threeds_eci=05&vads_cust_state=&\
+vads_threeds_sign_valid=1&vads_expiry_year=2013&vads_effective_amount=1904&vads_expiry_month=6&\
+vads_threeds_cavvAlgorithm=2&vads_result=00&vads_operation_type=DEBIT&vads_cust_title=&\
+signature=33f7eb8ca557cf862c72261da4e602f9c903afc2&vads_trans_status=AUTHORISED&\
+vads_theme_config=&vads_ship_to_city=&vads_hash=rcI8uquHGoTJ69krXVkmBDSydSIoFJs2ZE8S26Xt4DQ-&\
+vads_card_number=497010XXXXXX0000")  
         return request
-
-    def test_required_params_for_signature(self):
-        form = self.facade.get_return_form_populated_with_request(self.request)
-        for param in form.signature_params:
-            self.assertIsNotNone( form.fields[param] )
 
     def test_is_signature_valid(self):
         form = self.facade.get_return_form_populated_with_request(self.request)
         # form.is_valid()
-        # print form.compute_signature()
+        # print form.compute_signature()$
         self.assertTrue( form.is_valid(), msg=u"Errors: %s" % self.printable_form_errors(form) )
         self.assertEqual( len(form.cleaned_data['signature']), 40 )
         self.assertTrue( self.facade.gateway.is_signature_valid(form), msg=u"data: %s, excepted: %s" % (

@@ -52,10 +52,9 @@ class Gateway(object):
         """
         Compute the signature according to the doc
         """
-        
         params = form.values_for_signature(form.data)
         sign = '+'.join(params) + '+' + self._certificate
-        print "sign", sign
+        #print "sign", sign, sha1(sign).hexdigest()
         return sha1(sign).hexdigest()
 
     def is_signature_valid(self, form):
