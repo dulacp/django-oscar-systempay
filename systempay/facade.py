@@ -1,4 +1,5 @@
 from decimal import Decimal as D
+from urllib import urlencode
 import logging
 
 from django.conf import settings
@@ -78,53 +79,63 @@ class Facade(object):
         # create the database record
         order_number = self.get_order_number(form)
         total_incl_tax = self.get_total_incl_tax(form)
-        trans_record = self.record_txn(method, order_number, total_incl_tax, request)
+        txn = self.record_return_txn(method, order_number, total_incl_tax, request)
 
         if not form.is_valid():
-            trans_record.error_message = printable_form_errors(form)
-            trans_record.save()
+            txn.error_message = printable_form_errors(form)
+            txn.save()
             raise SystemPayFormNotValid("The data received are not complete: %s. See the record #%s for more details" % (
-                    printable_form_errors(form), trans_record.id)
+                    printable_form_errors(form), txn.id)
                 )
 
         if not facade.gateway.is_signature_valid(form):
-            trans_record.error_message = u"Signature not valid. Get '%s' vs Expected '%s'" % (
+            txn.error_message = u"Signature not valid. Get '%s' vs Expected '%s'" % (
                     form.cleaned_data['signature'], facade.gateway.compute_signature(form) 
                 )
-            trans_record.save()
-            raise SystemPayFormNotValid("The data received are not valid. See the record #%s for more details" % trans_record.id)
+            txn.save()
+            raise SystemPayFormNotValid("The data received are not valid. See the record #%s for more details" % txn.id)
 
+        if not txn.is_complete():
 
-        result = facade.get_result(form)
-        if result != '00':
-
-            if result == '02':
+            if txn.result == '02':
                 raise SystemPayGatewayPaymentRejected("The shop must contact the bank")
-            elif result == '05':
+            elif txn.result == '05':
                 raise SystemPayGatewayPaymentRejected("The payment has been rejected")
-            elif result == '30':
+            elif txn.result == '30':
                 extra_result = facade.get_extra_result(form)
                 raise SystemPayGatewayParamError(code=extra_result)
-            elif result == '96':
+            elif txn.result == '96':
                 raise SystemPayGatewayServerError("Technical error while processing the payment")
+            else:
+                raise SystemPayGatewayServerError("Unknown error")
 
             # TODO handle the ``auth_result`` param
             # auth_result = facade.get_auth_result(form)
             # if auth_result == '':
             #     raise SystemPayGatewayError
 
-        return trans_record
+        return txn
 
-    def record_txn(self, order_number, amount, request):
+    def record_submit_txn(self, order_number, amount, form):
+        return self.record_txn(order_number, amount, form.data, SystemPayTransaction.MODE_SUBMIT)
+
+    def record_return_txn(self, order_number, amount, request):
+        """
+        Record the transaction in the database to be able to tack everything we received
+        """
+        return self.record_txn(order_number, amount, request.POST, SystemPayTransaction.MODE_RETURN)
+
+    def record_txn(self, order_number, amount, data, mode):
         """
         Record the transaction in the database to be able to tack everything we received
         """
         return SystemPayTransaction.objects.create(
-                mode=SystemPayTransaction.MODE_RETURN,
-                trans_id=request.POST.get('vads_trans_id'),
-                trans_date=request.POST.get('vads_trans_date'),
+                mode=mode,
+                trans_id=data.get('vads_trans_id'),
+                trans_date=data.get('vads_trans_date'),
                 order_number=order_number,
                 amount=amount,
-                auth_result=request.POST.get('vads_auth_result'),
-                raw_request=urlencode(request.POST)
+                auth_result=data.get('vads_auth_result'),
+                result=data.get('vads_result'),
+                raw_request=urlencode(data)
             )

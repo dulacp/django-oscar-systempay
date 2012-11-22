@@ -25,7 +25,7 @@ class SystemPayTransaction(models.Model):
     currency = models.CharField(max_length=8, blank=True, null=True)
 
     auth_result = models.CharField(max_length=2, blank=True, null=True)
-    return_code = models.CharField(max_length=2, blank=True, null=True)
+    result = models.CharField(max_length=2, blank=True, null=True)
 
     error_message = models.CharField(max_length=256, blank=True, null=True)
 
@@ -48,7 +48,7 @@ class SystemPayTransaction(models.Model):
         return u"UNKNOWN request mode"
 
     def save(self, *args, **kwargs):
-        return super(ExpressTransaction, self).save(*args, **kwargs)
+        return super(SystemPayTransaction, self).save(*args, **kwargs)
 
     def request(self):
         return self._as_table(self.context)
@@ -67,3 +67,6 @@ class SystemPayTransaction(models.Model):
     def value(self, key):
         ctx = self.context
         return ctx[key][0].decode('utf8') if key in ctx else None
+
+    def is_complete(self):
+        return self.result == '00'
