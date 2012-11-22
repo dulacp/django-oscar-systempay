@@ -52,7 +52,7 @@ class Facade(object):
         """
         form = self.gateway.get_submit_form(
                 order.total_incl_tax, 
-                order_id=order.id, 
+                vads_order_id=order.id, 
                 **kwargs
             )
         self.gateway.sign(form)
