@@ -125,6 +125,10 @@ class Gateway(object):
         if self._custom_contracts:
             data['vads_contracts'] = self._custom_contracts
 
+
+        # optional parameters
+        data['vads_return_mode'] = 'GET'
+
         return SystemPaySubmitForm(data)
 
     def get_return_form(self, **kwargs):

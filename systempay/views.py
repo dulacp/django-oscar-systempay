@@ -144,13 +144,19 @@ class ReturnResponseView(generic.RedirectView):
                 order = Order._default_manager.get(id=self.request.GET['orderid'])
 
         if not order:
+            order_number = None
             if 'vads_order_id' in self.request.POST:
-                try:
-                    order = Order._default_manager.get(pk=self.request.POST['vads_order_id'])
-                except Order.DoesNotExist:
-                    raise Http404(_("The page requested seems outdated"))
-            else:
+                order_number = self.request.POST['vads_order_id']
+            elif 'vads_order_id' in self.request.GET:
+                order_number = self.request.GET['vads_order_id']
+
+            if not order_number:
                 raise Http404(_("No order found"))
+
+            try:
+                order = Order._default_manager.get(number=order_number)
+            except Order.DoesNotExist:
+                raise Http404(_("The page requested seems outdated"))
 
         # check if the transaction exists
         try:
