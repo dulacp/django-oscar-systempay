@@ -162,16 +162,15 @@ class ReturnResponseView(generic.RedirectView):
                 raise Http404(_("The page requested seems outdated"))
 
         # check if the transaction exists
-        txns = SystemPayTransaction.objects.filter(
+        txn = SystemPayTransaction.objects.filter(
                 mode=SystemPayTransaction.MODE_RETURN, 
                 order_number=order.number
             ).order_by('-date_created')[0]
 
-        if not txns:
+        if not txn:
             messages.error(self.request, _("No response received from your bank for the moment. "
                                        "Be patient, we'll get back to you as soon as we receive it.") )
         else:
-            txn = txns[0]
             if txn.is_complete(): # check if the transaction has been complete
                 messages.success(self.request, _("Your payment has been successfully validated."))
             else:
