@@ -6,7 +6,7 @@ import logging
 from django.db.models import get_model
 from django.views import generic
 from django.contrib import messages
-from django.http import Http404, HttpResponseRedirect, HttpResponseBadRequest
+from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpResponseBadRequest
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 
@@ -176,10 +176,14 @@ class CancelResponseView(generic.RedirectView):
         return reverse('basket:summary')
 
 
-class HandleIPN(PaymentDetailsView):
+class HandleIPN(generic.View):
+
+    def get(self, request, *args, **kwargs):
+        return HttpResponse()
 
     def post(self, request, *args, **kwargs):
         self.handle_ipn(request)
+        return HttpResponse()
 
     def handle_ipn(self, request, **kwargs):
         """
