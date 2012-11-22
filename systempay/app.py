@@ -10,6 +10,7 @@ class SystemPayApplication(Application):
     place_order_view = views.PlaceOrderView
     cancel_response_view = views.CancelResponseView
     secure_redirect_view = views.SecureRedirectView
+    handle_ipn_view = views.HandleIPN
 
     def __init__(self, *args, **kwargs):
         super(SystemPayApplication, self).__init__(*args, **kwargs)
@@ -24,9 +25,8 @@ class SystemPayApplication(Application):
                 name='cancel-response'),
             url(r'^place-order/', self.place_order_view.as_view(),
                 name='place-order'),
-            # View for using PayPal as a payment method
-            # url(r'^handle-ipn/', self.redirect_view.as_view(as_payment_method=True),
-            #     name='systempay-direct-payment'),
+            url(r'^handle-ipn/', self.handle_ipn_view.as_view(),
+                name='handle-ipn'),
         )
         return self.post_process_urls(urlpatterns)
 
