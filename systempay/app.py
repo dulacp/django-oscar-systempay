@@ -25,7 +25,7 @@ class SystemPayApplication(Application):
                 name='cancel-response'),
             url(r'^place-order/', self.place_order_view.as_view(),
                 name='place-order'),
-            url(r'^handle-ipn/', self.handle_ipn_view.as_view(),
+            url(r'^handle-ipn$', self.handle_ipn_view.as_view(),
                 name='handle-ipn'),
         )
         return self.post_process_urls(urlpatterns)
