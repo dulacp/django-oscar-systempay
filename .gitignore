@@ -4,6 +4,7 @@
 # Virtual Env
 venv
 
+utils.txt
 htmlcov
 dist
 integration.py
