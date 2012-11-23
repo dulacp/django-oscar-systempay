@@ -252,11 +252,11 @@ class HandleIPN(generic.View):
                                 order=order)
                 source.save()
             else:
-                raise PaymentError(_("Unknown operation type '%s'") % txn.operation_type)
+                raise PaymentError(_("Unknown operation type '%(operation_type)s'") % {'operation_type': txn.operation_type})
 
         except SystemPayError, inst:
             logger.error(inst.message)
             raise PaymentError(inst.message)
         except Order.DoesNotExist, inst:
-            logger.error(_("Unable to retrieve Order #%s") % txn.order_number)
-            raise PaymentError(_("Unable to retrieve Order #%s") % txn.order_number)
+            logger.error(_("Unable to retrieve Order #%(order_number)s") % {'order_number': txn.order_number})
+            raise PaymentError(_("Unable to retrieve Order #%(order_number)s") % {'order_number': txn.order_number})

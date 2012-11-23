@@ -1,0 +1,57 @@
+# Translations template for PROJECT.
+# Copyright (C) 2012 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2012.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2012-11-23 12:22+0100\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 0.9.6\n"
+
+#: views.py:61 views.py:161
+msgid "No order found"
+msgstr ""
+
+#: views.py:166
+msgid "The page requested seems outdated"
+msgstr ""
+
+#: views.py:182
+msgid ""
+"No response received from your bank for the moment. Be patient, we'll get"
+" back to you as soon as we receive it."
+msgstr ""
+
+#: views.py:187
+msgid "Your payment has been successfully validated."
+msgstr ""
+
+#: views.py:189
+msgid ""
+"Your payment has been rejected for the reason. You will not be charged. "
+"Contact the support for more details."
+msgstr ""
+
+#: views.py:207
+msgid "The transaction has be canceled"
+msgstr ""
+
+#: views.py:255
+#, python-format
+msgid "Unknown operation type '%(operation_type)s'"
+msgstr ""
+
+#: views.py:261 views.py:262
+#, python-format
+msgid "Unable to retrieve Order #%(order_number)s"
+msgstr ""
+
