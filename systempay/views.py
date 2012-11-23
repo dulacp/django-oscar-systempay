@@ -3,6 +3,7 @@
 from decimal import Decimal as D
 import logging
 
+from django.conf import settings
 from django.db.models import get_model
 from django.views import generic
 from django.contrib import messages
@@ -10,13 +11,14 @@ from django.http import HttpResponse, Http404, HttpResponseRedirect, HttpRespons
 from django.core.urlresolvers import reverse
 from django.utils.translation import ugettext_lazy as _
 
-from oscar.core.loading import get_classes
+from oscar.core.loading import get_class, get_classes
 
 from systempay.facade import Facade
 from systempay.exceptions import *
 
 logger = logging.getLogger('systempay')
 
+Basket = get_model('basket', 'Basket')
 Order = get_model('order', 'Order')
 Source = get_model('payment', 'Source')
 SourceType = get_model('payment', 'SourceType')
@@ -25,6 +27,8 @@ SystemPayTransaction = get_model('systempay', 'SystemPayTransaction')
 
 PaymentDetailsView, CheckoutSessionMixin = get_classes('checkout.views', ['PaymentDetailsView', 'CheckoutSessionMixin'])
 PaymentError, UnableToTakePayment = get_classes('payment.exceptions', ['PaymentError', 'UnableToTakePayment'])
+
+EventHandler = get_class('order.processing', 'EventHandler')
 
 
 def printable_form_errors(form):
@@ -136,8 +140,8 @@ class PlaceOrderView(PaymentDetailsView):
         return reverse('systempay:secure-redirect')
 
 
-class ReturnResponseView(generic.RedirectView):
-    def get_redirect_url(self, **kwargs):
+class ResponseView(generic.RedirectView):
+    def get_order(self):
         # We allow superusers to force an order thankyou page for testing
         order = None
         if self.request.user.is_superuser:
@@ -161,6 +165,13 @@ class ReturnResponseView(generic.RedirectView):
             except Order.DoesNotExist:
                 raise Http404(_("The page requested seems outdated"))
 
+        return order
+
+
+class ReturnResponseView(ResponseView):
+    def get_redirect_url(self, **kwargs):
+        order = self.get_order()
+
         # check if the transaction exists
         txns = SystemPayTransaction.objects.filter(
                 mode=SystemPayTransaction.MODE_RETURN, 
@@ -181,8 +192,18 @@ class ReturnResponseView(generic.RedirectView):
         return reverse('checkout:thank-you')
 
 
-class CancelResponseView(generic.RedirectView):
+class CancelResponseView(ResponseView):
     def get_redirect_url(self, **kwargs):
+        order = self.get_order()
+
+        # cancel the order
+        handler = EventHandler()
+        handler.handle_order_status_change(order, getattr(settings, 'OSCAR_STATUS_CANCELLED', None))
+
+        # unfreeze the basket
+        basket = Basket.objects.get(pk=order.basket_id)
+        basket.thaw()
+
         messages.error(self.request, _("The transaction has be canceled"))
         return reverse('basket:summary')
 

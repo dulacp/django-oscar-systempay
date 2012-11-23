@@ -4,6 +4,10 @@ import datetime
 import logging
 from hashlib import sha1
 
+from django.conf import settings
+from django.core.urlresolvers import reverse
+from django.contrib.sites.models import Site
+
 from oscar.apps.payment.exceptions import GatewayError
 
 from systempay.models import SystemPayTransaction
@@ -11,6 +15,12 @@ from systempay.forms import SystemPaySubmitForm, SystemPayReturnForm
 from systempay.exceptions import *
 
 logger = logging.getLogger('systempay')
+
+def build_absolute_uri(location):
+    scheme = "https"
+    if getattr(settings, 'LOCAL_SERVER', False) == True:
+        scheme = "http"
+    return '%s://%s%s' % (scheme, Site.objects.get_current().domain, location)
 
 
 class Gateway(object):
@@ -128,6 +138,8 @@ class Gateway(object):
 
         # optional parameters
         data['vads_return_mode'] = 'GET'
+        data['vads_url_return'] = build_absolute_uri(reverse('systempay:return-response'))
+        data['vads_url_cancel'] = build_absolute_uri(reverse('systempay:cancel-response'))
 
         return SystemPaySubmitForm(data)
 
