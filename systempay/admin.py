@@ -3,9 +3,10 @@ from systempay import models
 
 
 class SystemPayTransactionAdmin(admin.ModelAdmin):
-    list_display = ['mode', 'amount', 'currency', 'order_number', 'trans_id', 'trans_date',
-                    'date_created']
+    list_display = ['mode', 'operation_type', 'amount', 'currency', 'order_number', 
+                    'trans_id', 'trans_date', 'date_created']
     readonly_fields = [
+        'operation_type',
         'mode',
         'amount',
         'currency',
