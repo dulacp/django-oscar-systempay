@@ -3,6 +3,7 @@ from urllib import urlencode
 import logging
 
 from django.conf import settings
+from django.http import QueryDict
 
 from systempay import gateway
 from systempay.models import SystemPayTransaction
@@ -153,19 +154,27 @@ class Facade(object):
         """
         Record the transaction in the database to be able to tack everything we received
         """
+        # convert the QueryDict into a dict
+        d = {}
+        if isinstance(data, QueryDict):
+            for k in data:
+                d[k] = data.get(k)
+        else:
+            d.update(data)
+
         # ensure data values are utf8 (urlencode requirement)
-        for k in data:
-            if isinstance(data[k], unicode):
-                data[k] = data[k].encode('utf8')
+        for k in d:
+            if isinstance(d[k], unicode):
+                d[k] = d[k].encode('utf8')
 
         return SystemPayTransaction.objects.create(
                 mode=mode,
-                operation_type=data.get('vads_operation_type'),
-                trans_id=data.get('vads_trans_id'),
-                trans_date=data.get('vads_trans_date'),
+                operation_type=d.get('vads_operation_type'),
+                trans_id=d.get('vads_trans_id'),
+                trans_date=d.get('vads_trans_date'),
                 order_number=order_number,
                 amount=amount,
-                auth_result=data.get('vads_auth_result'),
-                result=data.get('vads_result'),
-                raw_request=urlencode(data)
+                auth_result=d.get('vads_auth_result'),
+                result=d.get('vads_result'),
+                raw_request=urlencode(d)
             )
