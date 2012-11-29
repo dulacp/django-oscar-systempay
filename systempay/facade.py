@@ -147,7 +147,7 @@ class Facade(object):
         """
         Record the transaction in the database to be able to tack everything we received
         """
-        return self.record_txn(order_number, amount, request.POST, SystemPayTransaction.MODE_RETURN)
+        return self.record_txn(order_number, amount, request.POST.copy(), SystemPayTransaction.MODE_RETURN)
 
     def record_txn(self, order_number, amount, data, mode):
         """
