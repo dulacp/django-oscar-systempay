@@ -74,7 +74,12 @@ class SecureRedirectView(CheckoutSessionMixin, generic.DetailView):
         order = self.get_object()
         form = self.get_form()
         Facade().record_submit_txn(order.number, order.total_incl_tax, form)
-        return super(SecureRedirectView, self).get(*args, **kwargs)
+        response = super(SecureRedirectView, self).get(*args, **kwargs)
+
+        # Flush of all session data
+        self.checkout_session.flush()
+
+        return response
 
     def get_context_data(self, **kwargs):
         ctx = super(SecureRedirectView, self).get_context_data(**kwargs)
@@ -109,7 +114,12 @@ class PlaceOrderView(PaymentDetailsView):
         Only record the allocated amount.
         """
         # Record payment source
-        source_type, is_created = SourceType.objects.get_or_create(code='systempay')
+        payment_method = self.checkout_session.payment_method()
+        if payment_method is None:
+            messages.error(self.request, _("Please choose a payment method."))
+            return HttpResponseRedirect(reverse('checkout:payment-method'))
+
+        source_type, is_created = SourceType.objects.get_or_create(code=payment_method)
         source = Source(source_type=source_type,
                         currency=kwargs.get('currency'),
                         amount_allocated=total_incl_tax,
@@ -127,8 +137,8 @@ class PlaceOrderView(PaymentDetailsView):
         # if send_confirmation_message:
         #     self.send_confirmation_message(order)
 
-        # Flush all session data
-        self.checkout_session.flush()
+        # Delay the flush of all session data
+        # self.checkout_session.flush()
 
         # Save order id in session so secure redirect page can load it
         self.request.session['checkout_order_id'] = order.id
@@ -195,9 +205,12 @@ class CancelResponseView(ResponseView):
     def get_redirect_url(self, **kwargs):
         order = self.get_order()
 
-        # cancel the order
+        # cancel the order (to deallocate the products)
         handler = EventHandler()
         handler.handle_order_status_change(order, getattr(settings, 'OSCAR_STATUS_CANCELLED', None))
+
+        # delete the order
+        order.delete()
 
         # unfreeze the basket
         basket = Basket.objects.get(pk=order.basket_id)
