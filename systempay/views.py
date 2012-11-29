@@ -13,6 +13,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from oscar.core.loading import get_class, get_classes
 
+from systempay.models import SystemPayTransaction
 from systempay.facade import Facade
 from systempay.exceptions import *
 
@@ -22,8 +23,6 @@ Basket = get_model('basket', 'Basket')
 Order = get_model('order', 'Order')
 Source = get_model('payment', 'Source')
 SourceType = get_model('payment', 'SourceType')
-
-SystemPayTransaction = get_model('systempay', 'SystemPayTransaction')
 
 PaymentDetailsView, CheckoutSessionMixin = get_classes('checkout.views', ['PaymentDetailsView', 'CheckoutSessionMixin'])
 PaymentError, UnableToTakePayment = get_classes('payment.exceptions', ['PaymentError', 'UnableToTakePayment'])
@@ -35,7 +34,7 @@ def printable_form_errors(form):
         return u' / '.join([u"%s: %s" % (f.name, '. '.join(f.errors)) for f in form])
 
 
-class SecureRedirectView(generic.DetailView):
+class SecureRedirectView(CheckoutSessionMixin, generic.DetailView):
     template_name = 'systempay/secure_redirect.html'
     context_object_name = 'order'
 

@@ -3,7 +3,6 @@ from urllib import urlencode
 import logging
 
 from django.conf import settings
-from django.db.models import get_model
 
 from systempay import gateway
 from systempay.models import SystemPayTransaction
@@ -11,8 +10,6 @@ from systempay.forms import SystemPaySubmitForm, SystemPayReturnForm
 from systempay.exceptions import *
 
 logger = logging.getLogger('systempay')
-
-SystemPayTransaction = get_model('systempay', 'SystemPayTransaction')
 
 
 class Facade(object):
@@ -50,10 +47,37 @@ class Facade(object):
         :order: an oscar order instance
         :kwargs: additional data, check the fields of the `SystemPaySubmitForm` class to see all possible values.
         """
+        params = {}
+        params['vads_order_id'] = order.number
+
+        if order.user: 
+            params['vads_cust_name'] = order.user.get_full_name()
+            params['vads_cust_email'] = order.user.email
+            params['vads_cust_id'] = order.user.pk
+
+        if order.billing_address:
+            params['vads_cust_title'] = order.billing_address.title or ""
+            params['vads_cust_address'] = order.billing_address.line1 or ""
+            params['vads_cust_city'] = order.billing_address.city or ""
+            params['vads_cust_state'] = order.billing_address.state or ""
+            params['vads_cust_zip'] = order.billing_address.postcode or ""
+            params['vads_cust_country'] = order.billing_address.country.iso_3166_1_a2
+
+        if order.shipping_address:
+            params['vads_ship_to_name'] = order.shipping_address.salutation()
+            params['vads_ship_to_street'] = order.shipping_address.line1 or ""
+            params['vads_ship_to_street2'] = order.shipping_address.line2 or ""
+            params['vads_ship_to_city'] = order.shipping_address.city or ""
+            params['vads_ship_to_state'] = order.shipping_address.state or ""
+            params['vads_ship_to_zip'] = order.shipping_address.postcode or ""
+            params['vads_ship_to_country'] = order.shipping_address.country.iso_3166_1_a2
+
+        # update with custom params
+        params.update(kwargs)
+
         form = self.gateway.get_submit_form(
                 order.total_incl_tax, 
-                vads_order_id=order.number, 
-                **kwargs
+                **params
             )
         self.gateway.sign(form)
         return form

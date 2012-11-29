@@ -12,6 +12,7 @@ from oscar.apps.payment.exceptions import GatewayError
 
 from systempay.models import SystemPayTransaction
 from systempay.forms import SystemPaySubmitForm, SystemPayReturnForm
+from systempay.utils import format_amount
 from systempay.exceptions import *
 
 logger = logging.getLogger('systempay')
@@ -75,15 +76,6 @@ class Gateway(object):
     def sign(self, form):
         form.data['signature'] = self.compute_signature(form)
 
-    def format_amount(self, amount):
-        """
-        Format the amount to respond to the plateform needs, which is a undivisible version of the amount.
-
-        c.g. if amount = $50.24 
-             then format_amount = 5024
-        """
-        return int(amount * 100)
-
     def get_trans_date(self):
         return datetime.datetime.utcnow().strftime('%Y%m%d%H%M%S')
 
@@ -113,7 +105,7 @@ class Gateway(object):
 
         # required values
         data['vads_action_mode'] = self._action_mode 
-        data['vads_amount'] = self.format_amount(amount)
+        data['vads_amount'] = format_amount(amount)
         data['vads_currency'] = kwargs.get('vads_currency', '978')     # 978 stands for EURO (ISO 639-1)
         data['vads_ctx_mode'] = self._context_mode
         data['vads_page_action'] = 'PAYMENT'
