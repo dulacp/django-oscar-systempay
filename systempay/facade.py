@@ -153,6 +153,11 @@ class Facade(object):
         """
         Record the transaction in the database to be able to tack everything we received
         """
+        # ensure data values are utf8 (urlencode requirement)
+        for k in data:
+            if isinstance(data[k], unicode):
+                data[k] = data[k].encode('utf8')
+
         return SystemPayTransaction.objects.create(
                 mode=mode,
                 operation_type=data.get('vads_operation_type'),

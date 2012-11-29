@@ -78,7 +78,8 @@ class ResponseForm(forms.Form):
         return sorted(p for p in self.signature_params(data) if p.startswith('vads_'))
 
     def values_for_signature(self, data):
-        return tuple( map( str, (data.get(param, '') for param in self.sorted_signature_params(data)) ) )
+        l = map( unicode, (data.get(param, '') for param in self.sorted_signature_params(data)) )
+        return tuple( map( lambda a: a.encode('utf8'), l) )
 
 
 class SystemPaySubmitForm(ResponseForm):
