@@ -113,3 +113,7 @@ class SystemPayTransaction(models.Model):
     def currency(self):
         return dict(CURRENCIES).get(self.value('vads_currency'), 'UNKNOWN')
 
+    @property
+    def reference(self):
+        return "%s%s" % (self.trans_date, self.trans_id)
+
