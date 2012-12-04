@@ -268,7 +268,7 @@ class HandleIPN(generic.View):
 
         except SystemPayError, inst:
             logger.error(inst.message)
-            raise PaymentError(inst.message)
+            #raise PaymentError(inst.message)
         except Order.DoesNotExist, inst:
             logger.error(_("Unable to retrieve Order #%(order_number)s") % {'order_number': txn.order_number})
-            raise PaymentError(_("Unable to retrieve Order #%(order_number)s") % {'order_number': txn.order_number})
+            #raise PaymentError(_("Unable to retrieve Order #%(order_number)s") % {'order_number': txn.order_number})
