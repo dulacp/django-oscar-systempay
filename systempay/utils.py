@@ -6,3 +6,6 @@ def format_amount(amount):
          then format_amount = 5024
     """
     return int(amount * 100)
+
+def printable_form_errors(form):
+    return u' / '.join([u"%s: %s" % (f.name, '. '.join(f.errors)) for f in form])

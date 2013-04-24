@@ -32,10 +32,6 @@ PaymentError, UnableToTakePayment = get_classes('payment.exceptions',
 EventHandler = get_class('order.processing', 'EventHandler')
 
 
-def printable_form_errors(form):
-        return u' / '.join([u"%s: %s" % (f.name, '. '.join(f.errors)) for f in form])
-
-
 class SecureRedirectView(CheckoutSessionMixin, generic.DetailView):
     template_name = 'systempay/secure_redirect.html'
     context_object_name = 'order'

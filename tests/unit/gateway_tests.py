@@ -5,8 +5,11 @@ from django.conf import settings
 from django.test import TestCase
 from django.http import QueryDict
 
+from oscar.apps.order.models import Order
+
 from systempay.facade import Facade
 from systempay.forms import SystemPaySubmitForm, SystemPayReturnForm
+from systempay.utils import printable_form_errors
 
 
 class TestForm(TestCase):
@@ -16,13 +19,13 @@ class TestForm(TestCase):
         self.facade = Facade()
 
     def create_mock_order(self):
-        order = Mock()
+        order = Order()
         order.number = '100313'
         order.total_incl_tax = D('15.24')
-        order.lines = Mock()
-        order.lines.all = Mock(return_value=[])
+        #order.lines = Mock()
+        #order.lines.all = Mock(return_value=[])
         order.total_discount = D('0.00')
-        order.get_discounts = Mock(return_value=[])
+        #order.get_discounts = Mock(return_value=[])
         return order
 
     def create_submit_form_with_order(self, order):
@@ -39,16 +42,14 @@ class TestForm(TestCase):
         self.facade.gateway.sign(form)
         return form
 
-    def printable_form_errors(self, form):
-        return u' / '.join([u"%s: %s" % (f.name, '. '.join(f.errors)) for f in form])
-
 
 class TestSubmitForm(TestForm):
 
     def test_is_signature_valid(self):
         form = self.create_submit_form_with_order(self.order)
-        self.assertTrue( form.is_valid(), msg=u"Errors: %s" % self.printable_form_errors(form) )
+        self.assertTrue( form.is_valid(), msg=u"Errors: %s" % printable_form_errors(form) )
         self.assertEqual( len(form.cleaned_data['signature']), 40 )
+        print form.cleaned_data
         self.assertEqual( form.cleaned_data['signature'], '5e1c92ed97089f3192c8c729236ec87567048590' )
 
 
@@ -84,7 +85,7 @@ vads_card_number=497010XXXXXX0000")
         form = self.facade.get_return_form_populated_with_request(self.request)
         # form.is_valid()
         # print form.compute_signature()$
-        self.assertTrue( form.is_valid(), msg=u"Errors: %s" % self.printable_form_errors(form) )
+        self.assertTrue( form.is_valid(), msg=u"Errors: %s" % printable_form_errors(form) )
         self.assertEqual( len(form.cleaned_data['signature']), 40 )
         self.assertTrue( self.facade.gateway.is_signature_valid(form), msg=u"data: %s, excepted: %s" % (
             form.cleaned_data['signature'], self.facade.gateway.compute_signature(form)) )
