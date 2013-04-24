@@ -24,8 +24,10 @@ Order = get_model('order', 'Order')
 Source = get_model('payment', 'Source')
 SourceType = get_model('payment', 'SourceType')
 
-PaymentDetailsView, CheckoutSessionMixin = get_classes('checkout.views', ['PaymentDetailsView', 'CheckoutSessionMixin'])
-PaymentError, UnableToTakePayment = get_classes('payment.exceptions', ['PaymentError', 'UnableToTakePayment'])
+PaymentDetailsView, OrderPlacementMixin, CheckoutSessionMixin = get_classes('checkout.views', 
+    ['PaymentDetailsView', 'OrderPlacementMixin', 'CheckoutSessionMixin'])
+PaymentError, UnableToTakePayment = get_classes('payment.exceptions', 
+    ['PaymentError', 'UnableToTakePayment'])
 
 EventHandler = get_class('order.processing', 'EventHandler')
 
@@ -220,7 +222,7 @@ class CancelResponseView(ResponseView):
         return reverse('basket:summary')
 
 
-class HandleIPN(generic.View):
+class HandleIPN(OrderPlacementMixin, generic.View):
 
     def get(self, request, *args, **kwargs):
         if request.user and request.user.is_superuser:
@@ -254,21 +256,23 @@ class HandleIPN(generic.View):
                                 currency=txn.currency,
                                 amount_allocated=D(0),
                                 amount_debited=txn.amount,
-                                order=order)
-                source.save()
+                                reference=txn.reference)
+                self.add_payment_source(source)
             elif txn.operation_type == SystemPayTransaction.OPERATION_TYPE_CREDIT:
                 source = Source(source_type=source_type,
                                 currency=txn.currency,
                                 amount_allocated=D(0),
                                 amount_refunded=txn.amount,
-                                order=order)
-                source.save()
+                                reference=txn.reference)
+                self.add_payment_source(source)
             else:
                 raise PaymentError(_("Unknown operation type '%(operation_type)s'") % {'operation_type': txn.operation_type})
 
+            self.save_payment_details(order)
+
         except SystemPayError, inst:
             logger.error(inst.message)
-            raise PaymentError(inst.message)
+            #raise PaymentError(inst.message)
         except Order.DoesNotExist, inst:
             logger.error(_("Unable to retrieve Order #%(order_number)s") % {'order_number': txn.order_number})
-            raise PaymentError(_("Unable to retrieve Order #%(order_number)s") % {'order_number': txn.order_number})
+            #raise PaymentError(_("Unable to retrieve Order #%(order_number)s") % {'order_number': txn.order_number})

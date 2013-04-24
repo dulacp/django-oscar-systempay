@@ -31,7 +31,7 @@ class Facade(object):
         return form.data.get('vads_order_id')
 
     def get_total_incl_tax(self, form):
-        return D(int(form.data.get('vads_amount'))/100.0)
+        return D(int(form.data.get('vads_amount', '0'))/100.0)
 
     def get_result(self, form):
         return form.data.get('vads_result')
